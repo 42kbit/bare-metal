@@ -97,35 +97,48 @@ prot_entry:
 	movl $idt_tbl, %ebx
 	movl %eax, 4(%ebx)
 */
-idt_ptr:
-.word idt_tbl_end - idt_tbl
-.long idt_tbl
 idt_tbl:
 /* offset lower */
 .word 0x0
 .word GDT_CODE
 /* reserved */
 .byte 0x0
-/*
-0b1110 - intr gate,
-7th bit - present
-*/
-.byte 0b10001110
+
+.byte 0x8e
 /* offset high */
 .word 0x0
 idt_tbl_end:
+idt_ptr:
+.word idt_tbl_end - idt_tbl - 1
+.long idt_tbl
+
 
 prot_entry:
+	mov $GDT_DATA, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+	/*
+	TODO detect the last memory address available properly.
+	It depends on how much RAM we have.
+	*/
+	mov $0x7000, %ebp
+	mov %ebp, %esp
+
 	movl $intr0_handler, %eax
-	movl $idt_tbl, %ebx
+	/* index */
+	movl $0, %ebx
 
-	movw %ax, (%ebx)
-	shll $16, %eax
-	movw %ax, 6(%ebx)
+	movw %ax, idt_tbl(,%ebx,8)
+	shrl $16, %eax
+	movw %ax, (idt_tbl + 6)(,%ebx,8)
 
+	/* i have no idea why but cli fixes code */
+	cli
 	lidt idt_ptr
 
-	sti
 	movl $0, %ecx
 	div %ecx
 _die:
@@ -133,5 +146,7 @@ _die:
 	jmp _die
 
 intr0_handler:
+	cli
 	movb $'b', 0xb8000
+	sti
 	iret
