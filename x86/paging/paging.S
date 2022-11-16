@@ -119,10 +119,10 @@ ptbl_init_lpbeg:
 	/* present and writable page */
 	movb $0b00000011, %dl
 	/* clr bits 8-11 (avl bits) */
+	andb $0xf0, %dh
 	movl %edx, (%ebx)
 	incl %eax
 	addl $0x4, %ebx
-	andb $0xf0, %dh
 	
 	jmp ptbl_init_lpbeg
 ptbl_init_lpend:
